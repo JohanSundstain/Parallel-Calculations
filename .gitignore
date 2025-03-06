@@ -1,5 +1,8 @@
 task1/build/
+task2/build/
 task1/Makefile
 lesson1
 par
 par.pub
+*.out
+*.bin
