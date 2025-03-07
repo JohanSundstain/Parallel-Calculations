@@ -75,5 +75,4 @@
 <b>Сравнение static и dynamic.</b>
 ![alt text](https://github.com/JohanSundstain/Parallel-Calculations/blob/master/res_part4.png?raw=true)
 ### CONCLUSION
-За счет того, что задачи у каждого потока примерно равны, static с определенного количества потоков показывает результат<br>
-лучше чем dynamic.
+За счет того, что задачи у каждого потока примерно равны, static с определенного количества потоков показывает результат лучше чем dynamic.
