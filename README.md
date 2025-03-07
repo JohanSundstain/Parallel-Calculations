@@ -49,10 +49,25 @@
 `  0:  10  21 `<br>
 `  1:  21  10 `
 ## RESULTS
+### TASK1
 | M=N  | T1         | S2        | S4     |S7     |S8     |S16    |S20    |S40    |
 |------|------------|-----------|--------|-------|-------|-------|-------|-------|
 | 20000| 0.624741   | 1.87079   | 3.64727|6.24131|7.06638|15.5192|19.5824|21.9282|
 | 40000| 2.56161    | 1.94669   |3.88276 |6.6319 |7.17922|12.149 |12.1201|21.1387|
 
-## GRAPH
-
+### GRAPH
+![alt text](https://github.com/JohanSundstain/Parallel-Calculations/blob/master/res_part1.png?raw=true)
+### CONCLUSION
+Эффективность потоков уменьшается в среднем после 20 используемых потоков.
+### TASK2
+### GRAPH
+![alt text](https://github.com/JohanSundstain/Parallel-Calculations/blob/master/res_part2.png?raw=true)
+### CONCLUSION
+Результат аналогичен первому эксперементу.
+### TASK3
+### GRAPH
+<b>Размер матрицы 20k x 20k.</b>
+![alt text](https://github.com/JohanSundstain/Parallel-Calculations/blob/master/res_part3.png?raw=true)
+### CONCLUSION
+На графике видно, что вторая реализация  алгоритма при увеличении количества потоков в среднем показывает лучшее время.<br>
+При подходе к максимуму потоков ситуация выравнивается.
