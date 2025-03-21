@@ -62,7 +62,7 @@ double simple_iter_method(size_t n, size_t k)
     #pragma omp parallel num_threads(k)
     {
         // Инициализация векторов с динамическим распределением итераций
-        #pragma omp for schedule(dynamic)
+        #pragma omp for schedule(static)
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
                 a[i * n + j] = (i == j) ? 2.0 : 1.0;
@@ -71,7 +71,6 @@ double simple_iter_method(size_t n, size_t k)
             x[i] = 0.0;
             x_next[i] = 0.0;
         }
-        #pragma omp barrier
 
         #pragma omp single
         {
@@ -81,7 +80,7 @@ double simple_iter_method(size_t n, size_t k)
         do {
         	double total_sum = 0.0;
             // Вычисляем массив diff: diff[i] = (a[i]*x) - b[i]
-            #pragma omp for schedule(dynamic)
+            #pragma omp for schedule(static)
             for (int i = 0; i < n; i++) {
                 double d = 0.0;
                 for (int j = 0; j < n; j++) {
@@ -91,7 +90,7 @@ double simple_iter_method(size_t n, size_t k)
             }
 
             // Обновляем x_next и считаем сумму квадратов diff с редукцией
-            #pragma omp for schedule(dynamic) 
+            #pragma omp for schedule(static) 
 			for (int i = 0; i < n; i++)
 			{
                 x_next[i] = x[i] - (tau * diff[i]);
@@ -113,7 +112,7 @@ double simple_iter_method(size_t n, size_t k)
 
             // Обновляем вектор x, если необходимо
             if (!leave && refresh) {
-                #pragma omp for schedule(dynamic)
+                #pragma omp for schedule(static)
                 for (int i = 0; i < n; i++) {
                     x[i] = x_next[i];
                 }

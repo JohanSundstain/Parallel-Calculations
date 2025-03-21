@@ -1,5 +1,6 @@
 {
 	"files.associations": {
+		"*.cpp": "cpp",
 		"iomanip": "cpp",
 		"cctype": "cpp",
 		"clocale": "cpp",
@@ -49,6 +50,16 @@
 		"stdexcept": "cpp",
 		"streambuf": "cpp",
 		"cinttypes": "cpp",
-		"typeinfo": "cpp"
+		"typeinfo": "cpp",
+		"span": "cpp",
+		"format": "cpp",
+		"barrier": "cpp",
+		"charconv": "cpp",
+		"chrono": "cpp",
+		"ratio": "cpp",
+		"semaphore": "cpp",
+		"stop_token": "cpp",
+		"thread": "cpp",
+		"variant": "cpp"
 	}
 }

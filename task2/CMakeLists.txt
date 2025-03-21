@@ -7,12 +7,13 @@ if(part STREQUAL "one")
     message("TASK ONE")
 
     add_executable(task1 part1/main.cpp)
-	target_link_libraries(task1 openmp)
 elseif(part STREQUAL "two")
     message("TASK TWO")
+
     add_executable(task2 part2/main.cpp)
 elseif(part STREQUAL "three")
     message("TASK THREE")
+
     add_executable(task3_m1 part2/main_m1.cpp)
 	add_executable(task3_m2 part3/main_m2.cpp)
 else()
