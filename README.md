@@ -76,3 +76,11 @@
 ![alt text](https://github.com/JohanSundstain/Parallel-Calculations/blob/master/res_part4.png?raw=true)
 ### CONCLUSION
 За счет того, что задачи у каждого потока примерно равны, static с определенного количества потоков показывает результат лучше чем dynamic.
+
+# Lab 3
+## RESULTS
+### TASK1
+Ускорение работы при использовании std::threads в среднем совпадает с ускорение при использовании openmp. Особенно видно ускорение при увеличении
+количества обрабатываемых данных.
+### GRAPH
+![alt text](https://github.com/JohanSundstain/Parallel-Calculations/blob/master/threads.png?raw=true)
