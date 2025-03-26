@@ -60,6 +60,11 @@
 		"semaphore": "cpp",
 		"stop_token": "cpp",
 		"thread": "cpp",
-		"variant": "cpp"
+		"variant": "cpp",
+		"queue": "cpp",
+		"condition_variable": "cpp",
+		"mutex": "cpp",
+		"cstring": "cpp",
+		"future": "cpp"
 	}
 }

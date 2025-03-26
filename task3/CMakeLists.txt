@@ -1,0 +1,15 @@
+cmake_minimum_required(VERSION 3.2)
+
+project(Lab3)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2")
+set(CMAKE_CXX_STANDARD 20)
+
+if(part STREQUAL "one")
+    message("TASK ONE")
+    add_executable(task1 part1/main.cpp)
+elseif(part STREQUAL "two")
+    message("TASK TWO")
+    add_executable(task2 part2/src/main.cpp part2/src/Client.cpp part2/src/Server.cpp)
+else()
+    message(FATAL_ERROR "Неверное значение part: ${part}")
+endif()
