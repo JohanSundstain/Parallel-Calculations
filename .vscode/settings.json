@@ -65,6 +65,7 @@
 		"condition_variable": "cpp",
 		"mutex": "cpp",
 		"cstring": "cpp",
-		"future": "cpp"
+		"future": "cpp",
+		"map": "cpp"
 	}
 }

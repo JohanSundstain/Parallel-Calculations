@@ -37,121 +37,99 @@ T uniform(T min, T max)
 	}
 	else
 	{
-		// TO DO 
-		// delete throw construction
 		throw std::runtime_error("This type is not supported\n");
 	}
 
 }
 
-/// @brief Структура для записи ответов с сервера в файл 
-/// @tparam T 
-template <typename T>
-struct record
-{
-	std::pair<T, T> args; /// Аргументы
-	T result; /// Резульат функции над агрументами
-};
 
-
-enum class ClientType { Sin = 0, Sqrt = 1, Pow = 2 }; /// Тип клиента
+enum class ClientType { Sin = 0, Sqrt = 1, Pow = 2 };
 
 template <typename T>
 class Client
 {
 public:
-	/// @brief Конструктор в который передаётся тип клиента
-	/// @param type Тип клиента
 	Client(ClientType type)
 	{
 		this->ctype = type;
 		file_name = "out";
+
 		switch (ctype)
 		{
-			case ClientType::Sin:  file_name += "_sin.txt"; break;
-			case ClientType::Sqrt: file_name += "_sqrt.txt"; break;
-			case ClientType::Pow:  file_name += "_pow.txt"; break;
+			case ClientType::Sin:
+			{
+				file_name += "_sin.txt";
+				task = [](T x, T y) {return std::sin(x); };
+				break;
+			}
+			case ClientType::Sqrt:
+			{
+				file_name += "_sqrt.txt"; 
+				task = [](T x, T y) {return std::sqrt(x); };
+				break;
+			}
+			case ClientType::Pow:
+			{
+				file_name += "_pow.txt";
+				task = [](T x, T y) {return std::pow(x,y); };
+				break;
+			}
+
 			default: break;
 		}
 	}
 
 	~Client(){}
 
-	/// @brief Получает shared_ptr на сервер, для взаимодействия
-	/// @param server Сервер
-	void set_server(std::shared_ptr<Server<T>> server)
+	void set_server(std::shared_ptr<Server> server)
 	{
 		this->server = server;
 	}
 
-	/// @brief Перегрузка оператора () для создания функционального класса
 	void operator()()
 	{
 		int iterations = uniform<int>(5, 10000);
-		std::vector<size_t> ids;
-		size_t workers = server->get_num_workers();
-
-		/// Создание ассинхронного метода с отложенным вычислением
-		std::future<void> ask_results = std::async(std::launch::deferred, &Client::get_results, this, std::ref(ids));
 
 		for (int i = 0; i < iterations; i++)
 		{
-			std::pair<T, T> p = this->generate_args();
-			/// Генерация порта, по которому будет обращение
-			int port = uniform<int>(0, static_cast<int>(workers-1));
-			size_t id = this->server->add_task(p, static_cast<size_t>(this->ctype), port);
-			ids.push_back(id);
-			records[id].args = p;
+			size_t id = this->get_id();
+			T arg1 = uniform<T>(0, 100);
+			T arg2 = uniform<T>(0, 100);
+			auto result = this->server->add_task(task, arg1, arg2);
+			auto answer = result.get();
+			logger << id << " " << arg1 << " " << arg2 << " " << answer << std::endl;
 		}
-
-		ask_results.get();
 
 		write_to_file();
 	}
 
 private:
-	ClientType ctype; /// Тип клиента
-	std::string file_name; /// Имя файла для каждого клиента, куда он сохраняет ответы
-	std::map<size_t, record<T>> records; /// Хеш таблица записей ключ - идентификатор задачи, значение - структура запись
-	std::shared_ptr<Server<T>> server; /// Указатель на сервер
+	ClientType ctype;
+	std::string file_name;
+	std::stringstream logger;
+	std::shared_ptr<Server> server;
+	std::function<T(T, T)> task;
+	static size_t uniq_id;
+	static std::mutex gen_mutex;
 
-	/// @brief Генерация случайных аргементов
-	/// @return Возвращает пару случайных аргументов
-	std::pair<T, T> generate_args()
+
+	static size_t get_id()
 	{
-		std::pair<T, T> p;
-		p.first = uniform<T>(0, 10);
-		p.second = uniform<T>(0, 10);
-		return p;
+		std::lock_guard<std::mutex> lock(gen_mutex);
+		return uniq_id++;
 	}
 
-	/// @brief Записывает ответы по в Хеш таблицу
-	/// @param ids Идентификаторы задач, резульататы которых нужно получить
-	void get_results(std::vector<size_t>& ids)
-	{
-		T result;
-		for (int i = 0; i < ids.size(); i++)
-		{
-			result = this->records[ids[i]].result = this->server->request_result(ids[i]);
-		}
-	}
-
-	/// @brief Запись ответов в файл
 	void write_to_file()
-	{
-		std::stringstream ss;
-		for (auto it = records.begin(); it != records.end(); it++)
-		{
-			ss << it->first << " "
-				<< it->second.args.first << " "
-				<< it->second.args.second << " "
-				<< it->second.result << "\n";
-		}
-		
+	{		
 		std::ofstream out(this->file_name);
-		out << ss.str();
+		out << logger.str();
 		out.close();
 	}
 };
+template <typename T>
+size_t Client<T>::uniq_id = 0;
+
+template <typename T>
+std::mutex Client<T>::gen_mutex;
 
 #endif
