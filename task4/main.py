@@ -96,13 +96,13 @@ class WindowImage:
     base_font_size = 32  # Базовый размер шрифта
     color = (255, 0, 0)  # Красный в формате PIL (BGR в OpenCV)
     
-    def __init__(self, frequency, width=800, height=600):
+    def __init__(self, frequency):
         self._delay = int(1000 / frequency)
         self._window_name = "MainWindow"
         self._text = ""
         self._is_closed = False
-        self.width = width
-        self.height = height
+        self.width = 1200
+        self.height = 720
         
         cv2.namedWindow(self._window_name, cv2.WINDOW_NORMAL)
         cv2.resizeWindow(self._window_name, self.width, self.height)
@@ -114,23 +114,20 @@ class WindowImage:
             self.font = ImageFont.load_default()
     
     def show(self, image):
-        # Преобразуем изображение OpenCV (BGR) в PIL (RGB)
         pil_image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
         draw = ImageDraw.Draw(pil_image)
         
-        # Динамический размер шрифта в зависимости от разрешения
-        scale_factor = min(self.width, self.height) / 800  # Базовое разрешение 800x600
+        scale_factor = min(self.width, self.height) / 800 
         font_size = int(self.base_font_size * scale_factor)
         font = ImageFont.truetype(self.font_path, font_size)
         
         text_size = draw.textbbox((0, 0), self._text, font=font)
         text_width = text_size[2] - text_size[0]
         text_height = text_size[3] - text_size[1]
-        position = ((self.width - text_width) // 2, (self.height - text_height) // 2)
+        position = (0, 0)
         
         draw.text(position, self._text, font=font, fill=self.color)
         
-        # Обратно в OpenCV (BGR)
         image_with_text = cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
         
         cv2.imshow(self._window_name, image_with_text)
