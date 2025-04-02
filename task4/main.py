@@ -81,41 +81,54 @@ class SensorCam(Sensor):
 		return self._run
 
 	
-class WindowImage():
-	font = cv2.FONT_HERSHEY_SIMPLEX
-	position = (50,50)
-	font_scale = 1
-	color = (0, 0, 255) 
-	thickness = 2
+import cv2
+import numpy as np
+from PIL import Image, ImageDraw, ImageFont
+import logging
 
-	def __init__(self, frequency):
-		self._delay = int(1000 / frequency)
-		self._window_name = "MainWindow" 
-		self._text = ""
-		self._is_closed = False
-		
-		cv2.namedWindow(self._window_name, cv2.WINDOW_NORMAL)
-		cv2.resizeWindow(self._window_name, 800, 600)
+class WindowImage:
+    font_path = "arial.ttf"  # Путь к шрифту (укажите свой, если нужно)
+    position = (50, 50)
+    font_size = 32
+    color = (255, 0, 0)  # Красный в формате PIL (BGR в OpenCV)
+    
+    def __init__(self, frequency):
+        self._delay = int(1000 / frequency)
+        self._window_name = "MainWindow"
+        self._text = ""
+        self._is_closed = False
+        
+        cv2.namedWindow(self._window_name, cv2.WINDOW_NORMAL)
+        cv2.resizeWindow(self._window_name, 800, 600)
 
-	def show(self, image):
-		cv2.putText(image, self._text, self.position, self.font, self.font_scale, self.color, self.thickness)
-		cv2.imshow(self._window_name, image)
-		if cv2.waitKey(self._delay) & 0xFF == ord('q'):
-			logging.info("The window is closed")
-			self._is_closed = True
+        try:
+            self.font = ImageFont.truetype(self.font_path, self.font_size)
+        except IOError:
+            logging.warning("Font not found, using default font")
+            self.font = ImageFont.load_default()
+    
+    def show(self, image):
+        # Преобразуем изображение OpenCV (BGR) в PIL (RGB)
+        pil_image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+        draw = ImageDraw.Draw(pil_image)
+        draw.text(self.position, self._text, font=self.font, fill=self.color)
+        image_with_text = cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
+        
+        cv2.imshow(self._window_name, image_with_text)
+        if cv2.waitKey(self._delay) & 0xFF == ord('q'):
+            logging.info("The window is closed")
+            self._is_closed = True
+    
+    def put_text(self, text):
+        self._text = text
+    
+    def is_closed(self):
+        return self._is_closed
+    
+    def __del__(self):
+        logging.info("Window is destroyed")
+        cv2.destroyAllWindows()
 
-
-	def put_text(self, text):
-		self._text = text
-
-
-	def is_closed(self):
-		return self._is_closed 
-
-
-	def __del__(self):
-		logging.info("Window is destroyed")
-		cv2.destroyAllWindows()
 
 class SensorXTask():
 	def __init__(self, sensor):
@@ -138,7 +151,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Настройки камеры")
     
     parser.add_argument("-c", "--camera", type=str, required=True)
-    parser.add_argument("-r", "--resolution", type=str, default="640x480")
+    parser.add_argument("-r", "--resolution", type=str, default="100x100")
     parser.add_argument("-f", "--frequency", type=int, default=30)
 
     args = parser.parse_args()
@@ -179,7 +192,7 @@ def main():
 
 	while not window.is_closed():
 		frame = camera.get()
-		window.put_text(f"Sens1: [{task0.get()}] Sens2: [{task1.get()}]  Sens3:{task2.get()}")
+		window.put_text(f"Sens1: [{task0.get()}]\nSens2: [{task1.get()}]\nSens3: [{task2.get()}]")
 		if frame is not None and frame.size > 0:
 			window.show(frame)
 		else:

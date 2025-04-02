@@ -1,3 +1,6 @@
-2025-04-02 18:23:15,407 - ERROR - Camera not detected
-2025-04-02 18:23:15,407 - ERROR - Catch exception
-2025-04-02 18:23:15,407 - INFO - Camera is released
+2025-04-02 19:07:14,987 - ERROR - Can't change resolution
+2025-04-02 19:07:14,987 - INFO - Camera finded
+2025-04-02 19:07:18,981 - INFO - There is no frames
+2025-04-02 19:07:18,981 - INFO - 1429 read frames
+2025-04-02 19:07:19,080 - INFO - Camera is released
+2025-04-02 19:07:19,080 - INFO - Window is destroyed
