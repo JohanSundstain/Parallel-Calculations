@@ -5,6 +5,8 @@ import argparse
 
 import cv2
 import logging
+from PIL import Image, ImageDraw, ImageFont
+import numpy as np
 
 #basic logger
 logging.basicConfig(filename='log/logfile.log', level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -46,18 +48,27 @@ class SensorCam(Sensor):
 		logging.info("Camera finded")
 		
 	def _read_cam(self):
-		while self._run: 
-			ret, frame = self._cap.read()
-			self._number_of_frame += 1
-			if not ret:
-				logging.info("There is no frames")
-				self._run = False
+		try:
+			while self._run: 
+				ret, frame = self._cap.read()
+				self._number_of_frame += 1
+				if not ret:
+					logging.info("No frames. Checking the camer...")
+					time.sleep(1)
+					if not self._cap.isOpened():
+						logging.info("Camera is turned off")
+						self._run = False
+						break
+					else:
+						continue
 
-			if not self._frames.empty():
-				self._frames.get()
-			
-			self._frames.put(frame)
-		logging.info(f'{self._number_of_frame} read frames')
+				if not self._frames.empty():
+					self._frames.get()
+				
+				self._frames.put(frame)
+			logging.info(f'{self._number_of_frame} read frames')
+		except cv2.error:
+			logging.error("Something wrong with camera")
 
 	def get(self):
 		if not self._run and self._frames.empty():  # Если поток завершился и кадров нет
@@ -80,21 +91,11 @@ class SensorCam(Sensor):
 	def is_stoped(self):
 		return self._run
 
-	
-import cv2
-import numpy as np
-from PIL import Image, ImageDraw, ImageFont
-import logging
-
-import cv2
-import numpy as np
-from PIL import Image, ImageDraw, ImageFont
-import logging
 
 class WindowImage:
-    font_path = "arial.ttf"  # Путь к шрифту (укажите свой, если нужно)
-    base_font_size = 32  # Базовый размер шрифта
-    color = (255, 0, 0)  # Красный в формате PIL (BGR в OpenCV)
+    font_path = "arial.ttf"  
+    base_font_size = 32  
+    color = (255, 0, 0)
     
     def __init__(self, frequency):
         self._delay = int(1000 / frequency)
@@ -120,14 +121,9 @@ class WindowImage:
         scale_factor = min(self.width, self.height) / 800 
         font_size = int(self.base_font_size * scale_factor)
         font = ImageFont.truetype(self.font_path, font_size)
-        
-        text_size = draw.textbbox((0, 0), self._text, font=font)
-        text_width = text_size[2] - text_size[0]
-        text_height = text_size[3] - text_size[1]
         position = (0, 0)
         
         draw.text(position, self._text, font=font, fill=self.color)
-        
         image_with_text = cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
         
         cv2.imshow(self._window_name, image_with_text)
@@ -144,7 +140,6 @@ class WindowImage:
     def __del__(self):
         logging.info("Window is destroyed")
         cv2.destroyAllWindows()
-
 
 
 class SensorXTask():
@@ -168,7 +163,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Настройки камеры")
     
     parser.add_argument("-c", "--camera", type=str, required=True)
-    parser.add_argument("-r", "--resolution", type=str, default="100x100")
+    parser.add_argument("-r", "--resolution", type=str, default="720x600")
     parser.add_argument("-f", "--frequency", type=int, default=30)
 
     args = parser.parse_args()
@@ -184,7 +179,7 @@ def main():
 		pass
 
 	try:
-		camera = SensorCam(cam_name, resolution)
+		camera = SensorCam(int(cam_name), resolution)
 		window = WindowImage(frequency)
 	except ValueError:
 		logging.error("Catch exception")
