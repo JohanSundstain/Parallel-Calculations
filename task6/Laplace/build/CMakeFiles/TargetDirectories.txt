@@ -1,0 +1,3 @@
+C:/NSU/2k/2s/Parallel-Calculations/task6/Laplace/build/CMakeFiles/jacobi.dir
+C:/NSU/2k/2s/Parallel-Calculations/task6/Laplace/build/CMakeFiles/ALL_BUILD.dir
+C:/NSU/2k/2s/Parallel-Calculations/task6/Laplace/build/CMakeFiles/ZERO_CHECK.dir

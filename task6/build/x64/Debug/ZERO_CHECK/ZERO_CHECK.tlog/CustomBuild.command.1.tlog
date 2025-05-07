@@ -1,0 +1,10 @@
+^C:\NSU\2K\2S\PARALLEL-CALCULATIONS\TASK6\BUILD\CMAKEFILES\789CA525E033E67B9AFAEEE4923CDF5A\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/NSU/2k/2s/Parallel-Calculations/task6 -BC:/NSU/2k/2s/Parallel-Calculations/task6/build --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file C:/NSU/2k/2s/Parallel-Calculations/task6/build/Laplace2D.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

@@ -9,3 +9,5 @@ par.pub
 *.bin
 .vscode
 IMG_9006.MP4
+video.mp4
+yolov8n-pose.pt
