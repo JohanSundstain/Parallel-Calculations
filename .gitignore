@@ -1,7 +1,9 @@
-task1/build/
-task2/build/
+task1/build
+task2/build
+task6/build
 task1/Makefile
 task3/build
+output.csv
 lesson1
 par
 par.pub

@@ -1,5 +1,0 @@
-C:/NSU/2k/2s/Parallel-Calculations/task6/build/CMakeFiles/exe.dir
-C:/NSU/2k/2s/Parallel-Calculations/task6/build/CMakeFiles/run.dir
-C:/NSU/2k/2s/Parallel-Calculations/task6/build/CMakeFiles/clean_cmake.dir
-C:/NSU/2k/2s/Parallel-Calculations/task6/build/CMakeFiles/ALL_BUILD.dir
-C:/NSU/2k/2s/Parallel-Calculations/task6/build/CMakeFiles/ZERO_CHECK.dir
