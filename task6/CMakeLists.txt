@@ -1,33 +1,35 @@
-cmake_minimum_required(VERSION 3.20)
-project(Laplace2D LANGUAGES C CXX)
+cmake_minimum_required(VERSION 3.16)
+project(jacobi_openacc LANGUAGES CXX)
 
-# Настройка компиляторов
-set(CMAKE_C_COMPILER pgcc)
-set(CMAKE_CXX_COMPILER pgc++)
+# OpenACC backend selector
+set(ACC_BACKEND "gpu" CACHE STRING "OpenACC target backend (host, multicore, gpu)")
+set_property(CACHE ACC_BACKEND PROPERTY STRINGS host multicore gpu)
 
-# Флаги компиляции
-set(CMAKE_C_FLAGS "-fast -ta=tesla")
-set(CMAKE_CXX_FLAGS "-fast -ta=tesla")
-set(CMAKE_Fortran_FLAGS "-fast -ta=tesla")
-set(CMAKE_EXE_LINKER_FLAGS "-fast -ta=tesla")
+# Use NVIDIA HPC compiler
+if (NOT CMAKE_CXX_COMPILER MATCHES "nvc\\+\\+")
+    message(FATAL_ERROR "You must use NVIDIA HPC compiler (nvc++) for OpenACC")
+endif()
 
-# Путь к NVIDIA HPC SDK
-set(NVTXLIB_DIR "/opt/nvidia/hpc_sdk/Linux_x86_64/20.9/cuda/11.0/include")
+# Enable OpenACC
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Minfo=accel -fast -lm")
 
-# Исходные файлы
-set(SOURCES laplace2d.c jacobi.c)  # Или .cpp/.F90 в зависимости от ваших исходников
+# Select backend
+if (ACC_BACKEND STREQUAL "gpu")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -acc=gpu -gpu=cc86,cuda12.8")
+elseif (ACC_BACKEND STREQUAL "multicore")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -acc=multicore")
+elseif (ACC_BACKEND STREQUAL "host")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -acc=host")
+else()
+    message(FATAL_ERROR "Unknown ACC_BACKEND value: ${ACC_BACKEND}")
+endif()
 
-# Создание исполняемого файла
-add_executable(exe ${SOURCES})
-target_include_directories(exe PRIVATE ${NVTXLIB_DIR})
 
-# Добавление цели для запуска
-add_custom_target(run ALL
-    DEPENDS exe
-    COMMAND ./exe
-)
+find_package(Boost REQUIRED COMPONENTS program_options)
 
-# Цель для очистки
-add_custom_target(clean_cmake
-    COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_BINARY_DIR}
-)
+
+add_executable(jacobi optimized.cpp)
+
+
+target_include_directories(jacobi PRIVATE ${Boost_INCLUDE_DIRS})
+target_link_libraries(jacobi PRIVATE ${Boost_LIBRARIES})
