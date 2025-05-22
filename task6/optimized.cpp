@@ -19,29 +19,50 @@ double cpuSecond()
 
 void initialize(double* A, double* Anew, int m, int n) 
 {
+	// m - columns
+	// n - rows
     std::memset(A, 0, n * m * sizeof(double));
     std::memset(Anew, 0, n * m * sizeof(double));
-	
-	int ind = OFFSET(1, 1, m);
-	A[ind] = 10;
-	Anew[ind] = 10;
 
-	ind = OFFSET(1, m-2, m);
-	A[ind] = 20;
-	Anew[ind] = 20;
+	int ind;
+	double a, b;
+	double step;
 
-	ind = OFFSET(n-2, 1, m);
-	A[ind] = 30;
-	Anew[ind] = 30;
+	a = 10, b = 20;
+	step = (b - a) / (m - 1);
+	for (int i = 0; i < m; i++)
+	{
+		ind = OFFSET(0, i, m);
+		Anew[ind] = A[ind] = a + step * i;
+	}
 
-	ind = OFFSET(n-2, m-2, m);
-	A[ind] = 20;
-	Anew[ind] = 20;
+	a = 30, b = 20;
+	step = (b - a) / (m - 1);
+	for (int i = 0; i < m; i++)
+	{
+		ind = OFFSET(n-1, i, m);
+		Anew[ind] = A[ind] = a + step * i;
+	}
 
+	a = 10, b = 30;
+	step = (b - a) / (n - 1);
+	for (int i = 0; i < n; i++)
+	{
+		ind = OFFSET(i, 0, m);
+		Anew[ind] = A[ind] = a + step * i;
+	}
+
+	a = 20, b = 20;
+	step = (b - a) / (n - 1);
+	for (int i = 0; i < n; i++)
+	{
+		ind = OFFSET(i, m-1, m);
+		Anew[ind] = A[ind] = a + step * i;
+	}
 }
 
 // OpenACC-enabled Jacobi iteration
-double calcNext(double* __restrict__ A, double* __restrict__ Anew, int m, int n)
+double calcNextWithError(double* __restrict__ A, double* __restrict__ Anew, int m, int n)
 {
     double error = 0.0;
 	#pragma acc parallel loop collapse(2) reduction(max:error) present(A, Anew)
@@ -62,12 +83,28 @@ double calcNext(double* __restrict__ A, double* __restrict__ Anew, int m, int n)
     return error;
 }
 
-void show_matrix(double* Matx, int n, int m)
+void calcNext(double* __restrict__ A, double* __restrict__ Anew, int m, int n)
 {
-	for (int i = 0; i < m; i++)
+	#pragma acc parallel loop collapse(2) present(A, Anew)
+    for (int j = 1; j < n - 1; ++j) 
+	{
+        for (int i = 1; i < m - 1; ++i)
+		{
+			int idx = j*m + i;
+          	double val = 0.25 * (A[idx+1] + A[idx-1] + A[idx+m] + A[idx-m]);
+			Anew[idx] = val;
+        }
+    }
+}
+
+void show_matrix(double* Matx, int m, int n)
+{
+	// m - column
+	// n - rows
+	for (int i = 0; i < n; i++)
 	{
 		std::cout << "[";
-		for (int  j = 0; j < n; j++)
+		for (int  j = 0; j < m; j++)
 		{
 			std::cout << std::scientific              // научный формат
                       << std::setprecision(2)         // 2 знака после точки (можно 3 или 4)
@@ -149,24 +186,26 @@ int main(int argc, char** argv)
 
 		#pragma acc data copy(A_ptr[0:m*n], Anew_ptr[0:m*n])
 		{
-			while (iter < iter_max) 
+			for (iter = 1; iter <= iter_max; iter++)
 			{
 				//nvtxRangePushA("calc");
-				error = calcNext(A.get(), Anew.get(), m, n);
-				if (iter % 1000 == 0 && error <= tol)
+				if (iter % 1000 == 0)
+				{
+					error = calcNextWithError(A_ptr, Anew_ptr, m, n);
+				}
+				else
+				{
+					calcNext(A_ptr, Anew_ptr, m, n);
+				}
+				//nvtxRangePop();
+				
+				if (error <= tol)
 				{
 					break;
 				}
-				//nvtxRangePop();
-
 				//nvtxRangePushA("swap");
-				std::swap(Anew, A);
-				A_ptr = A.get();
-				Anew_ptr = Anew.get();
-				#pragma acc exit data detach(A_ptr, Anew_ptr)
-				#pragma acc enter data attach(A_ptr, Anew_ptr)
+				std::swap(A_ptr, Anew_ptr);
 				//nvtxRangePop();
-				++iter;
 			}
 			end = cpuSecond();
 			std::cout << end-start << std::endl;

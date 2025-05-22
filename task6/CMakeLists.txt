@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 project(jacobi_openacc LANGUAGES CXX)
 
 # OpenACC backend selector
+set(CMAKE_CXX_COMPILER nvc++)
 set(ACC_BACKEND "gpu" CACHE STRING "OpenACC target backend (host, multicore, gpu)")
 set_property(CACHE ACC_BACKEND PROPERTY STRINGS host multicore gpu)
 
