@@ -16,7 +16,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Minfo=accel -fast -lm")
 
 # Select backend
 if (ACC_BACKEND STREQUAL "gpu")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -acc=gpu -gpu=cc86,cuda12.8")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -acc=gpu")
 elseif (ACC_BACKEND STREQUAL "multicore")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -acc=multicore")
 elseif (ACC_BACKEND STREQUAL "host")

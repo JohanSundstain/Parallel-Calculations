@@ -4,11 +4,37 @@
 #include <string>
 #include <iomanip>
 #include <fstream>
-#include <nvtx3/nvToolsExt.h>
 #include <cublas_v2.h>
-#include <openacc.h>
-#include <cuda_runtime.h>
+//#include <nvtx3/nvToolsExt.h>
 #include <boost/program_options.hpp>
+
+class cuBLAS_handler
+{
+private:
+	cublasHandle_t handler;
+	cublasStatus_t stat;
+public:
+	cuBLAS_handler()
+	{
+		this->stat = cublasCreate(&this->handler);
+	}
+
+	cublasStatus_t get_status()
+	{
+		return this->stat;
+	}
+
+	~cuBLAS_handler()
+	{
+		cublasDestroy(this->handler);
+	}
+
+	cublasHandle_t& get_handle()
+	{
+		return this->handler;
+	}
+
+};
 
 namespace po = boost::program_options;
 double cpuSecond() 
@@ -23,33 +49,56 @@ double cpuSecond()
 
 void initialize(double* A, double* Anew, int m, int n) 
 {
+	// m - columns
+	// n - rows
     std::memset(A, 0, n * m * sizeof(double));
     std::memset(Anew, 0, n * m * sizeof(double));
-	
-	int ind = OFFSET(1, 1, m);
-	A[ind] = 10;
-	Anew[ind] = 10;
 
-	ind = OFFSET(1, m-2, m);
-	A[ind] = 20;
-	Anew[ind] = 20;
+	int ind;
+	double a, b;
+	double step;
 
-	ind = OFFSET(n-2, 1, m);
-	A[ind] = 30;
-	Anew[ind] = 30;
-
-	ind = OFFSET(n-2, m-2, m);
-	A[ind] = 20;
-	Anew[ind] = 20;
-
-}
-
-void show_matrix(double* Matx, int n, int m)
-{
+	a = 10, b = 20;
+	step = (b - a) / (m - 1);
 	for (int i = 0; i < m; i++)
 	{
+		ind = OFFSET(0, i, m);
+		Anew[ind] = A[ind] = a + step * i;
+	}
+
+	a = 30, b = 20;
+	step = (b - a) / (m - 1);
+	for (int i = 0; i < m; i++)
+	{
+		ind = OFFSET(n-1, i, m);
+		Anew[ind] = A[ind] = a + step * i;
+	}
+
+	a = 10, b = 30;
+	step = (b - a) / (n - 1);
+	for (int i = 0; i < n; i++)
+	{
+		ind = OFFSET(i, 0, m);
+		Anew[ind] = A[ind] = a + step * i;
+	}
+
+	a = 20, b = 20;
+	step = (b - a) / (n - 1);
+	for (int i = 0; i < n; i++)
+	{
+		ind = OFFSET(i, m-1, m);
+		Anew[ind] = A[ind] = a + step * i;
+	}
+}
+
+void show_matrix(double* Matx, int m, int n)
+{
+	// m - column
+	// n - rows
+	for (int i = 0; i < n; i++)
+	{
 		std::cout << "[";
-		for (int  j = 0; j < n; j++)
+		for (int  j = 0; j < m; j++)
 		{
 			std::cout << std::scientific              // научный формат
                       << std::setprecision(2)         // 2 знака после точки (можно 3 или 4)
@@ -111,82 +160,107 @@ int main(int argc, char** argv)
 
 	double avg_time = 0.0;
 	double start = 0.0;
-	int iter;
+	int iter = 0;
 	double error = 1.0;
 	double end = 0.0;
 
+	// =========================================================
+	// cuBLAS variables for sub matrix C = α * op(A) + β * op(B),
+	// ========================================================
+	cuBLAS_handler handler;
+	cublasStatus_t stat = handler.get_status();
+	if (stat != CUBLAS_STATUS_SUCCESS) {
+		std::cerr << "Can't create handle\n";
+		return 1;
+	}
+
+
  	std::unique_ptr<double[]> A(new double[m * n]);
 	std::unique_ptr<double[]> Anew(new double[m * n]);
+	std::unique_ptr<double[]> Error(new double[m* n]);
 	double* A_ptr = A.get();
 	double* Anew_ptr = Anew.get();
+	double* Error_ptr = Error.get();
 
-	cublasHandle_t handle;
-	cudaStream_t stream;
-	cublasStatus_t stat = cublasCreate(&handle);
-	if (stat != CUBLAS_STATUS_SUCCESS) {
-        std::cerr << "Can't create handle\n";
-        return 1;
-    }
-	cudaStreamCreate(&stream); 
-	cublasSetStream(handle, stream);
-
-	double* Errors_ptr = nullptr;
-	cudaMalloc((void**)&Errors_ptr, m * n * sizeof(double));
-
-	for (int i = 0; i < experemnts; i++)
+	#pragma acc data create(Error_ptr[0:m*n], A_ptr[0:m*n], Anew_ptr[0:m*n])
 	{
-		error = 1.0;
-		start = cpuSecond();
-		nvtxRangePushA("init");
-		initialize(A_ptr, Anew_ptr, m, n);
- 	   	nvtxRangePop();
-
-		#pragma acc enter data copyin(A_ptr[0:m*n], Anew_ptr[0:m*n])
+		for (int i = 0; i < experemnts; i++)
 		{
-			for (iter = 0; iter < iter_max; iter++)
+			iter = 0;
+			error = 1.0;
+			start = cpuSecond();
+			//nvtxRangePushA("init");
+			initialize(A_ptr, Anew_ptr, m, n);
+			#pragma acc update device(A_ptr[0:m*n], Anew_ptr[0:m*n])
+		// nvtxRangePop();		
+			for (iter = 1; iter <= iter_max; iter++)
 			{
-				nvtxRangePushA("calc");
-				#pragma acc parallel loop collapse(2) deviceptr(Errors_ptr)
-				for (int j = 1; j < n - 1; ++j) 
+				//nvtxRangePushA("calc");
+				if (iter % 1000 == 0)
 				{
-					for (int i = 1; i < m - 1; ++i)
+					#pragma acc parallel loop collapse(2) present(A_ptr, Anew_ptr)
+					for (int j = 1; j < n - 1; ++j) 
 					{
-						int idx = j*m + i;
-						double val = 0.25 * (A_ptr[idx+1] + A_ptr[idx-1] + A_ptr[idx+m] + A_ptr[idx-m]);
-						Anew_ptr[idx] = val;
-						Errors_ptr[idx] = std::fabs(val - A_ptr[idx]);
+						for (int i = 1; i < m - 1; ++i)
+						{
+							int idx = j*m + i;
+							double val = 0.25 * (A_ptr[idx+1] + A_ptr[idx-1] + A_ptr[idx+m] + A_ptr[idx-m]);
+							Anew_ptr[idx] = val;
+						}
+					}
+						
+					int idx;
+					#pragma acc host_data use_device(Anew_ptr, A_ptr, Error_ptr)
+					{
+						double alpha = 1;
+						double beta = -1;
+						// C = alpha * A + beta * B
+						cublasDgeam(handler.get_handle(), CUBLAS_OP_N, CUBLAS_OP_N, m, n, &alpha, Anew_ptr, m, &beta, A_ptr, m, Error_ptr, m);
+						cublasIdamax(handler.get_handle(), m*n, Error_ptr, 1, &idx);
+					}
+					idx = idx - 1;
+					double* max_elem_ptr = &Error_ptr[idx];
+					#pragma acc update host(max_elem_ptr[0])
+					error = max_elem_ptr[0];
+				}
+				else
+				{	
+					#pragma acc parallel loop collapse(2) present(A_ptr, Anew_ptr)
+					for (int j = 1; j < n - 1; ++j) 
+					{
+						for (int i = 1; i < m - 1; ++i)
+						{
+							int idx = j*m + i;
+							double val = 0.25 * (A_ptr[idx+1] + A_ptr[idx-1] + A_ptr[idx+m] + A_ptr[idx-m]);
+							Anew_ptr[idx] = val;
+						}
 					}
 				}
-
-				int idx = 0;
-				double* cublas_ptr = (double*) acc_deviceptr(Errors_ptr);
-				cublasIdamax(handle, m*n, Errors_ptr, 1, &idx);
-				int max_idx = idx - 1;
-				cudaMemcpyAsync(&error, Errors_ptr + max_idx, sizeof(double), cudaMemcpyDeviceToHost, stream);
-				cudaStreamSynchronize(stream);
-				nvtxRangePop();
-   				if (error <= tol) break;
-    			std::swap(A_ptr, Anew_ptr);
-
+				//nvtxRangePop();
+				if (error <= tol)
+				{
+					break;
+				}
+				//nvtxRangePushA("swap");
+				std::swap(A_ptr, Anew_ptr);
+				//nvtxRangePop();
 			}
 			end = cpuSecond();
 			std::cout << end-start << std::endl;
 			avg_time += (end - start);
 		}
+		#pragma acc update host(A_ptr[0:n*m])
 	}
-
 	std::cout << "Avg time " << avg_time / static_cast<double>(experemnts) << ", " << iter << ", " << error << std::endl;
-   
-	#pragma acc exit data copyout(A_ptr[0:m*n])
-
+	
 	if (show)
 	{
 		show_matrix(A_ptr, n, m);
 	}
 
 	save_matrix_to_csv("output.csv", A_ptr, n, m);
-	
-	cublasDestroy(handle);
-	cudaFree(Errors_ptr);
+
+    //nvtxRangePop();
+
     return 0;
 }
