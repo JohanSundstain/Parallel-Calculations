@@ -8,6 +8,34 @@
 //#include <nvtx3/nvToolsExt.h>
 #include <boost/program_options.hpp>
 
+class cuBLAS_handler
+{
+private:
+	cublasHandle_t handler;
+	cublasStatus_t stat;
+public:
+	cuBLAS_handler()
+	{
+		this->stat = cublasCreate(&this->handler);
+	}
+
+	cublasStatus_t get_status()
+	{
+		return this->stat;
+	}
+
+	~cuBLAS_handler()
+	{
+		cublasDestroy(this->handler);
+	}
+
+	cublasHandle_t& get_handle()
+	{
+		return this->handler;
+	}
+
+};
+
 namespace po = boost::program_options;
 double cpuSecond() 
 {
@@ -15,6 +43,7 @@ double cpuSecond()
     timespec_get(&ts, TIME_UTC);
     return static_cast<double>(ts.tv_sec) + static_cast<double>(ts.tv_nsec) * 1e-9;
 }
+
 
 #define OFFSET(x, y, m) (((x) * (m)) + (y))
 
@@ -138,8 +167,8 @@ int main(int argc, char** argv)
 	// =========================================================
 	// cuBLAS variables for sub matrix C = α * op(A) + β * op(B),
 	// ========================================================
-	cublasHandle_t handle;
-	cublasStatus_t stat = cublasCreate(&handle);
+	cuBLAS_handler handler;
+	cublasStatus_t stat = handler.get_status();
 	if (stat != CUBLAS_STATUS_SUCCESS) {
 		std::cerr << "Can't create handle\n";
 		return 1;
@@ -183,11 +212,11 @@ int main(int argc, char** argv)
 					int idx;
 					#pragma acc host_data use_device(Anew_ptr, A_ptr, Error_ptr)
 					{
-						double alpha = 0.1;
-						double beta = -0.1;
+						double alpha = 1;
+						double beta = -1;
 						// C = alpha * A + beta * B
-						cublasDgeam(handle, CUBLAS_OP_N, CUBLAS_OP_N, m, n, &alpha, Anew_ptr, m, &beta, A_ptr, m, Error_ptr, m);
-						cublasIdamax(handle, m*n, Error_ptr, 1, &idx);
+						cublasDgeam(handler.get_handle(), CUBLAS_OP_N, CUBLAS_OP_N, m, n, &alpha, Anew_ptr, m, &beta, A_ptr, m, Error_ptr, m);
+						cublasIdamax(handler.get_handle(), m*n, Error_ptr, 1, &idx);
 					}
 					idx = idx - 1;
 					double* max_elem_ptr = &Error_ptr[idx];
@@ -220,10 +249,10 @@ int main(int argc, char** argv)
 			std::cout << end-start << std::endl;
 			avg_time += (end - start);
 		}
+		#pragma acc update host(A_ptr[0:n*m])
 	}
 	std::cout << "Avg time " << avg_time / static_cast<double>(experemnts) << ", " << iter << ", " << error << std::endl;
 	
-	#pragma acc update host(A_ptr[0:n*m])
 	if (show)
 	{
 		show_matrix(A_ptr, n, m);
