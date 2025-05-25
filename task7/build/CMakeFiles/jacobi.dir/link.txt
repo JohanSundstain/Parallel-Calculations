@@ -1,0 +1,1 @@
+nvc++  -Minfo=accel -fast -acc=gpu CMakeFiles/jacobi.dir/optimized.cpp.o -o jacobi   -L/opt/nvidia/hpc_sdk/Linux_x86_64/25.3/math_libs/lib64  -Wl,-rpath,/opt/nvidia/hpc_sdk/Linux_x86_64/25.3/math_libs/lib64 /usr/lib/x86_64-linux-gnu/libboost_program_options.so.1.83.0 -lcublas 
