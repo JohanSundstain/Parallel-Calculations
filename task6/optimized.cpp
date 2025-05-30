@@ -172,8 +172,8 @@ int main(int argc, char** argv)
 
  	std::unique_ptr<double[]> A(new double[m * n]);
 	std::unique_ptr<double[]> Anew(new double[m * n]);
-	double* A_ptr = A.get();
-	double* Anew_ptr = Anew.get();
+	double* A_hptr = A.get();
+	double* Anew_hptr = Anew.get();
 
 	for (int i = 0; i < experemnts; i++)
 	{
@@ -181,21 +181,21 @@ int main(int argc, char** argv)
 		error = 1.0;
 		start = cpuSecond();
 		//nvtxRangePushA("init");
-		initialize(A_ptr, Anew_ptr, m, n);
+		initialize(A_hptr, Anew_hptr, m, n);
  	   // nvtxRangePop();
 
-		#pragma acc data copy(A_ptr[0:m*n], Anew_ptr[0:m*n])
+		#pragma acc data copy(A_hptr[0:m*n], Anew_hptr[0:m*n])
 		{
 			for (iter = 1; iter <= iter_max; iter++)
 			{
 				//nvtxRangePushA("calc");
 				if (iter % 1000 == 0)
 				{
-					error = calcNextWithError(A_ptr, Anew_ptr, m, n);
+					error = calcNextWithError(A_hptr, Anew_hptr, m, n);
 				}
 				else
 				{
-					calcNext(A_ptr, Anew_ptr, m, n);
+					calcNext(A_hptr, Anew_hptr, m, n);
 				}
 				//nvtxRangePop();
 				
@@ -204,7 +204,7 @@ int main(int argc, char** argv)
 					break;
 				}
 				//nvtxRangePushA("swap");
-				std::swap(A_ptr, Anew_ptr);
+				std::swap(A_hptr, Anew_hptr);
 				//nvtxRangePop();
 			}
 			end = cpuSecond();
@@ -218,10 +218,10 @@ int main(int argc, char** argv)
 
 	if (show)
 	{
-		show_matrix(A_ptr, n, m);
+		show_matrix(A_hptr, n, m);
 	}
 
-	save_matrix_to_csv("output.csv", A_ptr, n, m);
+	save_matrix_to_csv("output.csv", A_hptr, n, m);
 
     //nvtxRangePop();
 

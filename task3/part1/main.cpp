@@ -14,7 +14,7 @@ double cpuSecond()
 
 double start, end;
 
-void matrix_mult_ser(std::shared_ptr<double[]> a,std::shared_ptr<double[]> b,std::shared_ptr<double[]> c, size_t n)
+void matrix_mult_ser(std::shared_hptr<double[]> a,std::shared_hptr<double[]> b,std::shared_hptr<double[]> c, size_t n)
 {
     for (int i = 0; i < n; i++)
     {
@@ -49,7 +49,7 @@ void matrix_mult_ser(std::shared_ptr<double[]> a,std::shared_ptr<double[]> b,std
 }
 
 
-void matrix_mult_par(std::shared_ptr<double[]> a,std::shared_ptr<double[]> b,std::shared_ptr<double[]> c, size_t n, size_t num_of_threads, size_t curr_thread)
+void matrix_mult_par(std::shared_hptr<double[]> a,std::shared_hptr<double[]> b,std::shared_hptr<double[]> c, size_t n, size_t num_of_threads, size_t curr_thread)
 {	
 	double time = 0.0;
 	int nthreads = num_of_threads;
@@ -103,9 +103,9 @@ int main()
 
 	// serial region
 	{
-		std::shared_ptr<double[]> a(new double[n*n]);
-		std::shared_ptr<double[]> b(new double[n]);
-		std::shared_ptr<double[]> c(new double[n]);
+		std::shared_hptr<double[]> a(new double[n*n]);
+		std::shared_hptr<double[]> b(new double[n]);
+		std::shared_hptr<double[]> c(new double[n]);
 		double avg_time = 0.0;
 		for (size_t i = 0; i < times; i++)
 		{
@@ -122,9 +122,9 @@ int main()
 	// parallel region
 	for (size_t th : num_of_threads)
 	{
-		std::shared_ptr<double[]> a(new double[n*n]);
-		std::shared_ptr<double[]> b(new double[n]);
-		std::shared_ptr<double[]> c(new double[n]);
+		std::shared_hptr<double[]> a(new double[n*n]);
+		std::shared_hptr<double[]> b(new double[n]);
+		std::shared_hptr<double[]> c(new double[n]);
 
 		double avg_time = 0.0;
 		for (size_t t = 0; t < times; t++)

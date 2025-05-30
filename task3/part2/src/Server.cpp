@@ -66,7 +66,7 @@ public:
 	{
 		using return_type = decltype(func(args...));
 
-		/// Создаем shared_ptr на задачу, передаем бинд функции и её переданных аргументов
+		/// Создаем shared_hptr на задачу, передаем бинд функции и её переданных аргументов
 		/// Пробрасываем forward для правильной обработки rvalue и lvalue
 		auto task = std::make_shared<std::packaged_task<return_type()>>(
 			std::bind(std::forward<Func>(func), std::forward<Args>(args)...)

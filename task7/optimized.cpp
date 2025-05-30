@@ -178,11 +178,11 @@ int main(int argc, char** argv)
  	std::unique_ptr<double[]> A(new double[m * n]);
 	std::unique_ptr<double[]> Anew(new double[m * n]);
 	std::unique_ptr<double[]> Error(new double[m* n]);
-	double* A_ptr = A.get();
-	double* Anew_ptr = Anew.get();
-	double* Error_ptr = Error.get();
+	double* A_hptr = A.get();
+	double* Anew_hptr = Anew.get();
+	double* Error_hptr = Error.get();
 
-	#pragma acc data create(Error_ptr[0:m*n], A_ptr[0:m*n], Anew_ptr[0:m*n])
+	#pragma acc data create(Error_hptr[0:m*n], A_hptr[0:m*n], Anew_hptr[0:m*n])
 	{
 		for (int i = 0; i < experemnts; i++)
 		{
@@ -190,49 +190,49 @@ int main(int argc, char** argv)
 			error = 1.0;
 			start = cpuSecond();
 			//nvtxRangePushA("init");
-			initialize(A_ptr, Anew_ptr, m, n);
-			#pragma acc update device(A_ptr[0:m*n], Anew_ptr[0:m*n])
+			initialize(A_hptr, Anew_hptr, m, n);
+			#pragma acc update device(A_hptr[0:m*n], Anew_hptr[0:m*n])
 		// nvtxRangePop();		
 			for (iter = 1; iter <= iter_max; iter++)
 			{
 				//nvtxRangePushA("calc");
 				if (iter % 1000 == 0)
 				{
-					#pragma acc parallel loop collapse(2) present(A_ptr, Anew_ptr)
+					#pragma acc parallel loop collapse(2) present(A_hptr, Anew_hptr)
 					for (int j = 1; j < n - 1; ++j) 
 					{
 						for (int i = 1; i < m - 1; ++i)
 						{
 							int idx = j*m + i;
-							double val = 0.25 * (A_ptr[idx+1] + A_ptr[idx-1] + A_ptr[idx+m] + A_ptr[idx-m]);
-							Anew_ptr[idx] = val;
+							double val = 0.25 * (A_hptr[idx+1] + A_hptr[idx-1] + A_hptr[idx+m] + A_hptr[idx-m]);
+							Anew_hptr[idx] = val;
 						}
 					}
 						
 					int idx;
-					#pragma acc host_data use_device(Anew_ptr, A_ptr, Error_ptr)
+					#pragma acc host_data use_device(Anew_hptr, A_hptr, Error_hptr)
 					{
 						double alpha = 1;
 						double beta = -1;
 						// C = alpha * A + beta * B
-						cublasDgeam(handler.get_handle(), CUBLAS_OP_N, CUBLAS_OP_N, m, n, &alpha, Anew_ptr, m, &beta, A_ptr, m, Error_ptr, m);
-						cublasIdamax(handler.get_handle(), m*n, Error_ptr, 1, &idx);
+						cublasDgeam(handler.get_handle(), CUBLAS_OP_N, CUBLAS_OP_N, m, n, &alpha, Anew_hptr, m, &beta, A_hptr, m, Error_hptr, m);
+						cublasIdamax(handler.get_handle(), m*n, Error_hptr, 1, &idx);
 					}
 					idx = idx - 1;
-					double* max_elem_ptr = &Error_ptr[idx];
-					#pragma acc update host(max_elem_ptr[0])
-					error = max_elem_ptr[0];
+					double* max_elem_hptr = &Error_hptr[idx];
+					#pragma acc update host(max_elem_hptr[0])
+					error = max_elem_hptr[0];
 				}
 				else
 				{	
-					#pragma acc parallel loop collapse(2) present(A_ptr, Anew_ptr)
+					#pragma acc parallel loop collapse(2) present(A_hptr, Anew_hptr)
 					for (int j = 1; j < n - 1; ++j) 
 					{
 						for (int i = 1; i < m - 1; ++i)
 						{
 							int idx = j*m + i;
-							double val = 0.25 * (A_ptr[idx+1] + A_ptr[idx-1] + A_ptr[idx+m] + A_ptr[idx-m]);
-							Anew_ptr[idx] = val;
+							double val = 0.25 * (A_hptr[idx+1] + A_hptr[idx-1] + A_hptr[idx+m] + A_hptr[idx-m]);
+							Anew_hptr[idx] = val;
 						}
 					}
 				}
@@ -242,23 +242,23 @@ int main(int argc, char** argv)
 					break;
 				}
 				//nvtxRangePushA("swap");
-				std::swap(A_ptr, Anew_ptr);
+				std::swap(A_hptr, Anew_hptr);
 				//nvtxRangePop();
 			}
 			end = cpuSecond();
 			std::cout << end-start << std::endl;
 			avg_time += (end - start);
 		}
-		#pragma acc update host(A_ptr[0:n*m])
+		#pragma acc update host(A_hptr[0:n*m])
 	}
 	std::cout << "Avg time " << avg_time / static_cast<double>(experemnts) << ", " << iter << ", " << error << std::endl;
 	
 	if (show)
 	{
-		show_matrix(A_ptr, n, m);
+		show_matrix(A_hptr, n, m);
 	}
 
-	save_matrix_to_csv("output.csv", A_ptr, n, m);
+	save_matrix_to_csv("output.csv", A_hptr, n, m);
 
     //nvtxRangePop();
 

@@ -66,6 +66,13 @@
 		"mutex": "cpp",
 		"cstring": "cpp",
 		"future": "cpp",
-		"map": "cpp"
+		"map": "cpp",
+		"strstream": "cpp",
+		"bitset": "cpp",
+		"complex": "cpp",
+		"list": "cpp",
+		"set": "cpp",
+		"cfenv": "cpp",
+		"typeindex": "cpp"
 	}
 }

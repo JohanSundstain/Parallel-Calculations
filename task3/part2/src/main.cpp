@@ -17,7 +17,7 @@ int main()
 	Client<double> c{ ClientType::Sin};
 	Client<double> c1{ ClientType::Sqrt };
 	Client<double> c2{ ClientType::Pow };
-	std::shared_ptr<Server> server = std::make_shared<Server>(10);
+	std::shared_hptr<Server> server = std::make_shared<Server>(10);
 
 	c.set_server(server);
 	c1.set_server(server);

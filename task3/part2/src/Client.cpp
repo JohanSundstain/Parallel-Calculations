@@ -81,7 +81,7 @@ public:
 
 	~Client(){}
 
-	void set_server(std::shared_ptr<Server> server)
+	void set_server(std::shared_hptr<Server> server)
 	{
 		this->server = server;
 	}
@@ -107,7 +107,7 @@ private:
 	ClientType ctype;
 	std::string file_name;
 	std::stringstream logger;
-	std::shared_ptr<Server> server;
+	std::shared_hptr<Server> server;
 	std::function<T(T, T)> task;
 	static size_t uniq_id;
 	static std::mutex gen_mutex;
